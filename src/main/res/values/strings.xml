@@ -1829,4 +1829,7 @@
 	<string name="pref_album_skip_to_first_key" translatable="false">pref_album_skip_to_first_key</string>
 	<string name="pref_album_skip_to_first_title">Automatically open first album image</string>
 
+	<!-- 2024-01-07 -->!
+	<string name="video_speed_setting" translatable="true">Change video speed</string>
+	<string name="video_speed_instruction" translatable="true">Choose playback speed</string>
 </resources>
