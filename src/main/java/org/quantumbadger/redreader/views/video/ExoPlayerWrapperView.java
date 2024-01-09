@@ -460,6 +460,9 @@ public class ExoPlayerWrapperView extends FrameLayout {
 		return String.format(Locale.US, "%d:%02d", mins, secs);
 	}
 	private void openSpeedSettingDialog(final Context context) {
+		// Pause video playback before opening the dialog
+		mVideoPlayer.setPlayWhenReady(false);
+
 		final MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
 		builder.setTitle(R.string.video_speed_instruction);
 
@@ -527,8 +530,18 @@ public class ExoPlayerWrapperView extends FrameLayout {
 			mCurrentPlaybackSpeed = 0.01f * (speedSeekBar.getProgress() + 1);
 			mVideoPlayer.setPlaybackSpeed(mCurrentPlaybackSpeed);
 			mSpeedTextView.setText(String.format(Locale.US, "(%.2fx)", mCurrentPlaybackSpeed));
+			// Resume video playback when dialog is dismissed
+			mVideoPlayer.setPlayWhenReady(true);
 		});
-		builder.setNegativeButton("Cancel", null);
+		builder.setNegativeButton("Cancel", (dialog, which) -> {
+			// Resume video playback when dialog is dismissed
+			mVideoPlayer.setPlayWhenReady(true);
+		});
+
+		builder.setOnCancelListener(dialog -> {
+			// Resume video playback when dialog is canceled
+			mVideoPlayer.setPlayWhenReady(true);
+		});
 
 		builder.show();
 	}
