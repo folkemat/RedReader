@@ -105,6 +105,14 @@ public final class UserPropertiesDialog extends PropertiesDialog {
 					false));
 		}
 
+		if (user.is_followed != null) {
+			items.addView(propView(
+					context,
+					R.string.userprofile_tag_followed,
+					user.is_followed ? R.string.general_true : R.string.general_false,
+					false));
+		}
+
 		if (user.is_employee != null) {
 			items.addView(propView(
 					context,
@@ -121,6 +129,12 @@ public final class UserPropertiesDialog extends PropertiesDialog {
 					false));
 		}
 
+		if (user.is_followed != null) {
+			items.addView(propView(
+					context,
+					R.string.userprofile_tag_followed,
+					user.is_followed ? R.string.general_true : R.string.general_false,
+        
 		if (user.is_blocked != null) {
 			items.addView(propView(
 					context,
