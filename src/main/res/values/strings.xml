@@ -1850,4 +1850,8 @@
 	<string name="unblock_user_failed_title" translatable="true">Failed to unblock</string>
 	<string name="unblock_user_failed_message" translatable="true">Failed to unblock user. You may have to log out and re-add your account. Message from Reddit:</string>
 	<string name="blocked_user_comment" translatable="true">[blocked]</string>
+  
+	<!-- 2024-01-10 -->
+	<string name="comment_upload_picture">Upload picture</string>
+	<string name="comment_picture_pretext">Picture</string>
 </resources>
