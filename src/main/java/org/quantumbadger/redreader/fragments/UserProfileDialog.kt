@@ -50,6 +50,7 @@ import org.quantumbadger.redreader.common.time.TimeFormatHelper.format
 import org.quantumbadger.redreader.common.time.TimestampUTC
 import org.quantumbadger.redreader.common.time.TimestampUTC.Companion.fromUtcSecs
 import org.quantumbadger.redreader.common.time.TimestampUTC.Companion.now
+import org.quantumbadger.redreader.reddit.APIResponseHandler.ActionResponseHandler
 import org.quantumbadger.redreader.reddit.APIResponseHandler.UserResponseHandler
 import org.quantumbadger.redreader.reddit.RedditAPI
 import org.quantumbadger.redreader.reddit.api.RedditSubredditSubscriptionManager
@@ -82,6 +83,7 @@ object UserProfileDialog {
 		val textviewAccountAge = dialog.findViewById<MaterialTextView>(R.id.user_profile_account_age)!!
 		val chipYou = dialog.findViewById<Chip>(R.id.user_profile_chip_you)!!
 		val chipSuspended = dialog.findViewById<Chip>(R.id.user_profile_chip_suspended)!!
+		val chipBlocked = dialog.findViewById<Chip>(R.id.user_profile_chip_blocked)!!
 		val chipFriend = dialog.findViewById<Chip>(R.id.user_profile_chip_friend)!!
 		val chipAdmin = dialog.findViewById<Chip>(R.id.user_profile_chip_admin)!!
 		val chipMod = dialog.findViewById<Chip>(R.id.user_profile_chip_moderator)!!
@@ -95,6 +97,9 @@ object UserProfileDialog {
 		val chipFollow = dialog.findViewById<Chip>(R.id.user_profile_chip_follow)!!
 		val chipFollowed = dialog.findViewById<Chip>(R.id.user_profile_chip_followed)!!
 		val chipUnfollow = dialog.findViewById<Chip>(R.id.user_profile_chip_unfollow)!!
+		val chipBlock = dialog.findViewById<Chip>(R.id.user_profile_chip_block)!!
+		val chipUnblock = dialog.findViewById<Chip>(R.id.user_profile_chip_unblock)!!
+
 
 		val cm = CacheManager.getInstance(activity)
 		val accountManager = RedditAccountManager.getInstance(activity)
@@ -133,10 +138,20 @@ object UserProfileDialog {
 							accountManager.getDefaultAccount().canonicalUsername
 						)) {
 							chipYou.visibility = View.GONE
+						}else{
+							chipBlock.visibility = View.GONE //you should not block yourself
 						}
 
 						if (user.is_suspended != true) {
 							chipSuspended.visibility = View.GONE
+						}
+
+						if (user.is_blocked != true) {
+							chipBlocked.visibility = View.GONE
+							chipUnblock.visibility = View.GONE
+						}else {
+							chipBlock.visibility = View.GONE //dont show block button if blocked
+							chipUnblock.visibility = View.VISIBLE
 						}
 
 						if (user.is_friend != true) {
@@ -241,11 +256,27 @@ object UserProfileDialog {
 							UserPropertiesDialog.newInstance(user)
 								.show(activity.supportFragmentManager, null)
 						}
+
 						chipFollow.setOnClickListener {
 							subscribeToUser(activity, username)
 						}
 						chipUnfollow.setOnClickListener {
 							unsubscribeToUser(activity, username)
+              
+						chipBlock.setOnClickListener {
+							MaterialAlertDialogBuilder(activity)
+									.setTitle(activity.getString(R.string.block_confirmation))
+									.setMessage(activity.getString(R.string.are_you_sure_block_user))
+									.setPositiveButton(activity.getString(R.string.block_yes)) { dialog, which ->
+										chipBlock.text = activity.getString(R.string.block_button_loading)
+										blockUser(activity, username, chipBlock, chipBlocked, chipUnblock)
+									}
+									.setNegativeButton(activity.getString(R.string.block_no), null)
+									.show()
+						}
+						chipUnblock.setOnClickListener {
+							chipUnblock.text = activity.getString(R.string.unblock_button_loading)
+							unblockUser(activity, username, chipBlock, chipBlocked, chipUnblock)
 						}
 					}
 				}
@@ -329,6 +360,120 @@ object UserProfileDialog {
 				RedditAccountManager.getInstance(activity).defaultAccount
 		)
 		return subMan
+    
+	private fun unblockUser(activity: AppCompatActivity, username: String, chipBlock: Chip, chipBlocked: Chip, chipUnblock: Chip) {
+		val cm = CacheManager.getInstance(activity)
+		val currentUser = RedditAccountManager.getInstance(activity).defaultAccount
+
+		RedditAPI.getUser(
+				cm,
+				currentUser.username,
+				object : UserResponseHandler(activity) {
+					override fun onDownloadStarted() {}
+
+					override fun onSuccess(redditUser: RedditUser, timestamp: TimestampUTC) {
+						val currentUserFullname = redditUser.fullname()
+						unblockUserApiCall(activity, username, currentUserFullname, chipBlock, chipBlocked, chipUnblock)
+					}
+
+					override fun onCallbackException(t: Throwable) {
+						activity.runOnUiThread {
+							chipUnblock.text = activity.getString(R.string.userprofile_button_unblock)
+						}
+						BugReportActivity.handleGlobalError(context, t)
+					}
+
+					override fun onFailure(error: RRError) {
+						activity.runOnUiThread {
+							chipUnblock.text = activity.getString(R.string.userprofile_button_unblock)
+						}
+					}
+				},
+				currentUser,
+				DownloadStrategyAlways.INSTANCE,
+				activity
+		)
+	}
+
+	private fun unblockUserApiCall(activity: AppCompatActivity, usernameToUnblock: String, currentUserFullname: String, chipBlock: Chip, chipBlocked: Chip, chipUnblock: Chip) {
+		val cm = CacheManager.getInstance(activity)
+		val currentUser = RedditAccountManager.getInstance(activity).defaultAccount
+
+		RedditAPI.unblockUser(
+				cm,
+				usernameToUnblock,
+				currentUserFullname,
+				object : ActionResponseHandler(activity) {
+					override fun onSuccess() {
+						activity.runOnUiThread {
+							chipUnblock.text = activity.getString(R.string.userprofile_button_unblock)
+							chipUnblock.visibility = View.GONE
+							chipBlocked.visibility = View.GONE
+							chipBlock.visibility = View.VISIBLE
+						}
+					}
+
+					override fun onFailure(error: RRError) {
+						activity.runOnUiThread {
+							chipUnblock.text = activity.getString(R.string.userprofile_button_unblock)
+						}
+						//During testing I quickly ran into rate limits, so show the user what's going on
+						val errorTitle = activity.getString(R.string.unblock_user_failed_title)
+						val errorMessageBase = activity.getString(R.string.unblock_user_failed_message)
+						val errorMessage = "$errorMessageBase\n\n${error.message}"
+						DialogUtils.showDialog(activity, errorTitle, errorMessage)
+					}
+
+					override fun onCallbackException(t: Throwable?) {
+						BugReportActivity.handleGlobalError(activity, t)
+						activity.runOnUiThread {
+							chipUnblock.text = activity.getString(R.string.userprofile_button_unblock)
+						}
+					}
+				},
+				currentUser,
+				activity
+		)
+	}
+
+	private fun blockUser(activity: AppCompatActivity, username: String, chipBlock: Chip, chipBlocked: Chip, chipUnblock: Chip) {
+		val cm = CacheManager.getInstance(activity)
+		val currentUser = RedditAccountManager.getInstance(activity).defaultAccount
+
+		RedditAPI.blockUser(
+				cm,
+				username,
+				object : ActionResponseHandler(activity) {
+					override fun onSuccess() {
+						activity.runOnUiThread {
+							chipBlock.text = activity.getString(R.string.userprofile_button_block)
+							chipBlock.visibility = View.GONE
+							chipBlocked.visibility = View.VISIBLE
+							chipUnblock.visibility = View.VISIBLE
+						}
+					}
+
+					override fun onFailure(error: RRError) {
+						activity.runOnUiThread {
+							chipBlock.text = activity.getString(R.string.userprofile_button_block)
+						}
+						//During testing I quickly ran into rate limits, so show the user what's going on
+						val errorTitle = activity.getString(R.string.block_user_failed_title)
+						val errorMessageBase = activity.getString(R.string.block_user_failed_message)
+						val errorMessage = "$errorMessageBase\n\n${error.message}"
+						DialogUtils.showDialog(activity, errorTitle, errorMessage)
+					}
+
+					override fun onCallbackException(t: Throwable?) {
+						BugReportActivity.handleGlobalError(activity, t)
+						activity.runOnUiThread {
+							chipBlock.text = activity.getString(R.string.userprofile_button_block)
+						}
+					}
+				},
+				currentUser,
+				activity
+		)
 	}
 
 	@Throws(URISyntaxException::class)

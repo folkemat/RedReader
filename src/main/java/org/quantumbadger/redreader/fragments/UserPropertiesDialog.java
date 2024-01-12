@@ -134,6 +134,12 @@ public final class UserPropertiesDialog extends PropertiesDialog {
 					context,
 					R.string.userprofile_tag_followed,
 					user.is_followed ? R.string.general_true : R.string.general_false,
+        
+		if (user.is_blocked != null) {
+			items.addView(propView(
+					context,
+					R.string.userprofile_tag_blocked,
+					user.is_blocked ? R.string.general_true : R.string.general_false,
 					false));
 		}
 
