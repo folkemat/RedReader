@@ -471,7 +471,11 @@ public class ExoPlayerWrapperView extends FrameLayout {
 		speedSettingsLayout.setPadding(20, 20, 20, 20);
 
 		final TextView speedValue = new TextView(context);
-		speedValue.setText(String.format(Locale.US, getResources().getString(R.string.video_speed_term) + ": %.2fx", mCurrentPlaybackSpeed));
+		speedValue.setText(String.format(
+			Locale.US,
+			getResources().getString(R.string.video_speed_term) + ": %.2fx",
+			mCurrentPlaybackSpeed)
+		);
 		speedValue.setTextSize(18);
 		speedValue.setPadding(10, 10, 10, 10);
 
@@ -493,7 +497,11 @@ public class ExoPlayerWrapperView extends FrameLayout {
 			public void onProgressChanged(final SeekBar seekBar,
 											final int progress,final boolean fromUser) {
 				final float selectedSpeed = 0.01f * (progress + 1);
-				speedValue.setText(String.format(Locale.US, getResources().getString(R.string.video_speed_term) + ": %.2fx", selectedSpeed));
+				speedValue.setText(String.format(
+					Locale.US,
+					getResources().getString(R.string.video_speed_term) + ": %.2fx",
+					selectedSpeed)
+				);
 			}
 
 			@Override
@@ -556,7 +564,11 @@ public class ExoPlayerWrapperView extends FrameLayout {
 		speedButton.setOnClickListener(v -> {
 			seekBar.setProgress(progress);
 			final float selectedSpeed = 0.01f * (progress + 1);
-			speedValue.setText(String.format(Locale.US, getResources().getString(R.string.video_speed_term) + ": %.2fx", selectedSpeed));
+			speedValue.setText(String.format(
+				Locale.US,
+				getResources().getString(R.string.video_speed_term) + ": %.2fx",
+				selectedSpeed)
+			);
 		});
 
 		final LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
